@@ -1,5 +1,5 @@
 ---
-filename: "_ai/backlog/active/250522_1500__IMPLEMENTATION_PLAN__TopdataAddressHashes.md"
+filename: "_ai/backlog/archive/250522_1500__IMPLEMENTATION_PLAN__TopdataAddressHashes.md"
 title: "Implementation of Bulletproof Address Hashing for ERP Sync"
 createdAt: 2025-05-22 15:00
 updatedAt: 2026-04-01 00:00
