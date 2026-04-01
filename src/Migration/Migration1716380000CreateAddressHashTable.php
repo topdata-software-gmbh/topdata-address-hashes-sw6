@@ -14,13 +14,25 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
 
     public function update(Connection $connection): void
     {
-        $this->createExtensionTable($connection, 'tdah_customer_address_extension');
-        $this->createExtensionTable($connection, 'tdah_order_address_extension');
+        $this->_createExtensionTable($connection, 'tdah_customer_address_extension');
+        $this->_createExtensionTable($connection, 'tdah_order_address_extension');
 
-        $this->createTriggers($connection);
+        $connection->executeStatement("
+            ALTER TABLE `tdah_customer_address_extension`
+            ADD CONSTRAINT `fk.tdah_customer.address_id`
+            FOREIGN KEY (`address_id`) REFERENCES `customer_address` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+        ");
+
+        $connection->executeStatement("
+            ALTER TABLE `tdah_order_address_extension`
+            ADD CONSTRAINT `fk.tdah_order.address_id`
+            FOREIGN KEY (`address_id`, `address_version_id`) REFERENCES `order_address` (`id`, `version_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+        ");
+
+        $this->_createTriggers($connection);
     }
 
-    private function createExtensionTable(Connection $connection, string $tableName): void
+    private function _createExtensionTable(Connection $connection, string $tableName): void
     {
         $hasVersion = $tableName !== 'tdah_customer_address_extension';
         $versionColumn = $hasVersion ? "`address_version_id` BINARY(16) NOT NULL," : '';
@@ -39,13 +51,14 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
         );
     }
 
-    private function createTriggers(Connection $connection): void
+
+    private function _createTriggers(Connection $connection): void
     {
-        $this->setupTriggersForTable($connection, 'customer_address', 'tdah_customer_address_extension');
-        $this->setupTriggersForTable($connection, 'order_address', 'tdah_order_address_extension');
+        $this->_setupTriggersForTable($connection, 'customer_address', 'tdah_customer_address_extension');
+        $this->_setupTriggersForTable($connection, 'order_address', 'tdah_order_address_extension');
     }
 
-    private function setupTriggersForTable(Connection $connection, string $coreTable, string $extensionTable): void
+    private function _setupTriggersForTable(Connection $connection, string $coreTable, string $extensionTable): void
     {
         $triggerIns = "tdah_{$coreTable}_ins";
         $triggerUpd = "tdah_{$coreTable}_upd";
