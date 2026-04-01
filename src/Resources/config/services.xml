@@ -4,6 +4,22 @@
            xsi:schemaLocation="http://symfony.com/schema/dic/services http://symfony.com/schema/dic/services/services-1.0.xsd">
 
     <services>
+        <service id="Topdata\TopdataAddressHashesSW6\Core\Content\AddressHash\CustomerAddressHashDefinition">
+            <tag name="shopware.entity.definition" entity="tdah_customer_address_extension"/>
+        </service>
+
+        <service id="Topdata\TopdataAddressHashesSW6\Core\Content\AddressHash\OrderAddressHashDefinition">
+            <tag name="shopware.entity.definition" entity="tdah_order_address_extension"/>
+        </service>
+
+        <service id="Topdata\TopdataAddressHashesSW6\Extension\CustomerAddressExtension">
+            <tag name="shopware.entity.extension"/>
+        </service>
+
+        <service id="Topdata\TopdataAddressHashesSW6\Extension\OrderAddressExtension">
+            <tag name="shopware.entity.extension"/>
+        </service>
+
         <service id="Topdata\TopdataAddressHashesSW6\Command\RefreshHashesCommand">
             <argument type="service" id="Doctrine\DBAL\Connection"/>
             <tag name="console.command"/>

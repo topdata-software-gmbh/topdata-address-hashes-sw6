@@ -22,17 +22,17 @@ class RefreshHashesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->writeln('Refreshing hashes for customer_address...');
-        $this->refreshTable('customer_address', "UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')");
+        $this->refreshTable('customer_address', 'tdah_customer_address_extension', "UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')");
 
         $output->writeln('Refreshing hashes for order_address...');
-        $this->refreshTable('order_address', 'version_id');
+        $this->refreshTable('order_address', 'tdah_order_address_extension', 'version_id');
 
         $output->writeln('<info>Successfully refreshed all address hashes.</info>');
 
         return Command::SUCCESS;
     }
 
-    private function refreshTable(string $table, string $versionField): void
+    private function refreshTable(string $table, string $extensionTable, string $versionField): void
     {
         $hashExpr = "SHA2(LOWER(CONCAT(
             REGEXP_REPLACE(IFNULL(street, ''), '[^a-zA-Z0-9]', ''),
@@ -51,8 +51,8 @@ class RefreshHashesCommand extends Command
         )), 256)";
 
         $this->connection->executeStatement(
-            "REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
-            SELECT id, $versionField, $hashExpr, NOW(3) FROM `$table`"
+            "REPLACE INTO `$extensionTable` (address_id, address_version_id, fingerprint, created_at, updated_at)
+            SELECT id, $versionField, $hashExpr, NOW(3), NULL FROM `$table`"
         );
     }
 }

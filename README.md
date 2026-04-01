@@ -15,14 +15,14 @@ This plugin provides a persistent address fingerprint (hash) for de-duplication 
 
 ## For the ERP Guy 
 
-The hashes are stored in a separate table so Shopware core tables remain untouched.
+The hashes are stored in separate extension tables so Shopware core tables remain untouched.
 
 ### Get the hash for a customer address
 
 ```sql
 SELECT ca.*, h.fingerprint
 FROM customer_address ca
-         JOIN tdah_address_hash h ON ca.id = h.address_id
+        JOIN tdah_customer_address_extension h ON ca.id = h.address_id
     AND h.address_version_id = UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f');
 ```
 
@@ -31,7 +31,7 @@ FROM customer_address ca
 ```sql
 SELECT oa.*, h.fingerprint
 FROM order_address oa
-JOIN tdah_address_hash h ON oa.id = h.address_id
+JOIN tdah_order_address_extension h ON oa.id = h.address_id
 	AND oa.version_id = h.address_version_id
 ;
 ```

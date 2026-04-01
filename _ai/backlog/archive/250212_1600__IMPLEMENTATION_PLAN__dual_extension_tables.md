@@ -2,8 +2,8 @@
 filename: "_ai/backlog/active/250212_1600__IMPLEMENTATION_PLAN__dual_extension_tables.md"
 title: "Refactor Address Hashes to Dual Entity Extension Tables"
 createdAt: 2025-02-12 16:00
-updatedAt: 2025-02-12 16:00
-status: draft
+updatedAt: 2026-04-01 19:15
+status: completed
 priority: high
 tags: [shopware, mysql-triggers, entity-extensions, erp-integration]
 estimatedComplexity: moderate

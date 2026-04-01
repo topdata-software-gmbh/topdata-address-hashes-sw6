@@ -24,7 +24,8 @@ class TopdataAddressHashesSW6 extends Plugin
         $connection->executeStatement('DROP TRIGGER IF EXISTS `tdah_order_address_ins`');
         $connection->executeStatement('DROP TRIGGER IF EXISTS `tdah_order_address_upd`');
 
-        // 2. Drop Table
-        $connection->executeStatement('DROP TABLE IF EXISTS `tdah_address_hash`');
+        // 2. Drop Tables
+        $connection->executeStatement('DROP TABLE IF EXISTS `tdah_customer_address_extension`');
+        $connection->executeStatement('DROP TABLE IF EXISTS `tdah_order_address_extension`');
     }
 }
