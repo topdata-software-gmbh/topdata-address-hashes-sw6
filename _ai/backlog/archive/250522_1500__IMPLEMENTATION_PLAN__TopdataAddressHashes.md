@@ -18,7 +18,7 @@ This plan implements a dedicated hashing solution within the `TopdataAddressHash
 - **Storage**: A custom table `tdah_address_hash` stores the relationship between an address ID and its calculated hash.
 - **Automation**: MySQL Triggers are used to calculate and update hashes automatically on `INSERT` or `UPDATE` of `customer_address` and `order_address`. This bypasses PHP-level limitations and ensures 100% data integrity.
 - **Compatibility**: No core tables are modified. The solution follows Shopware best practices by using a dedicated extension table.
-- **ERP Integration**: Provides simple SQL access for the ERP "guy" (Collin) to join the hashes.
+- **ERP Integration**: Provides simple SQL access for the ERP "guy"  to join the hashes.
 
 ## Project Environment
 - **Plugin Name**: `TopdataAddressHashesSW6`
@@ -110,7 +110,7 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
 ## Phase 2: Maintenance Commands
 
 ### [MODIFY] `src/Command/ExampleCommand.php` -> `src/Command/RefreshHashesCommand.php`
-[RENAME & MODIFY] Rename the example command to provide a utility for Collin to recalculate all hashes for existing data.
+[RENAME & MODIFY] Rename the example command to provide a utility for ERP guy to recalculate all hashes for existing data.
 
 ```php
 <?php declare(strict_types=1);
@@ -190,17 +190,17 @@ Register the command.
 
 ---
 
-## Phase 4: User Documentation (for Collin)
+## Phase 4: User Documentation (for ERP guy)
 
 ### [MODIFY] `README.md`
-Add the SQL instructions for Collin.
+Add the SQL instructions for ERP guy.
 
 ```markdown
 # Topdata Address Hashes SW6 (ERP Integration)
 
 This plugin provides a persistent "Address Fingerprint" (Hash) for de-duplication in ERP systems.
 
-## For the ERP Guy (Collin)
+## For the ERP Guy 
 
 The hashes are stored in a separate table to keep the Shopware core clean. 
 

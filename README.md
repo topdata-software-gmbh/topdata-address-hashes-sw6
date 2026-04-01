@@ -13,7 +13,7 @@ This plugin provides a persistent address fingerprint (hash) for de-duplication 
 - Shopware 6.7.*
 - MySQL 8.0+ or MariaDB 10.11+
 
-## For the ERP Guy (Collin)
+## For the ERP Guy 
 
 The hashes are stored in a separate table so Shopware core tables remain untouched.
 
