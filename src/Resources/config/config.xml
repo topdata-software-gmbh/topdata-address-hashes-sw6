@@ -2,13 +2,31 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/shopware/platform/trunk/src/Core/System/SystemConfig/Schema/config.xsd">
     <card>
-        <title>Basic Configuration</title>
-        <title lang="de-DE">Grundeinstellungen</title>
-        
-        <input-field>
-            <name>example</name>
-            <label>Example Configuration</label>
-            <label lang="de-DE">Beispiel Konfiguration</label>
+        <title>Hashing Configuration</title>
+        <title lang="de-DE">Hashing-Konfiguration</title>
+
+        <input-field type="multi-select">
+            <name>hashFields</name>
+            <label>Fields to include in Fingerprint</label>
+            <label lang="de-DE">Felder fuer den Fingerabdruck</label>
+            <helpText>Choose which address fields are used for hash calculation.</helpText>
+            <helpText lang="de-DE">Waehlen Sie die Adressfelder fuer die Hash-Berechnung.</helpText>
+            <options>
+                <option><id>street</id><name>Street</name></option>
+                <option><id>zipcode</id><name>Zipcode</name></option>
+                <option><id>city</id><name>City</name></option>
+                <option><id>phoneNumber</id><name>Phone Number</name></option>
+                <option><id>additionalAddressLine1</id><name>Additional Line 1</name></option>
+                <option><id>additionalAddressLine2</id><name>Additional Line 2</name></option>
+                <option><id>company</id><name>Company</name></option>
+                <option><id>department</id><name>Department</name></option>
+                <option><id>salutationId</id><name>Salutation (ID)</name></option>
+                <option><id>firstName</id><name>First Name</name></option>
+                <option><id>lastName</id><name>Last Name</name></option>
+                <option><id>title</id><name>Title</name></option>
+                <option><id>countryId</id><name>Country (ID)</name></option>
+            </options>
+            <defaultValue>["street", "zipcode", "city", "lastName", "countryId"]</defaultValue>
         </input-field>
     </card>
 </config>

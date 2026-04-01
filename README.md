@@ -35,22 +35,18 @@ JOIN tdah_order_address_extension h ON oa.id = h.address_id AND oa.version_id = 
 
 ### Hash logic
 
-The fingerprint is SHA256 of the concatenation (in order) of the following normalized fields:
+The fingerprint is SHA256 over a configurable list of normalized fields.
+Default fields are:
 - `street`
 - `zipcode`
 - `city`
-- `phone_number`
-- `additional_address_line1`
-- `additional_address_line2`
-- `company`
-- `department`
-- `salutation_id` (as HEX)
-- `first_name`
-- `last_name`
-- `title`
-- `country_id` (as HEX)
+- `lastName`
+- `countryId`
 
-All text fields have non-alphanumeric characters removed and are lowercased before hashing. Binary IDs are converted to hex strings.
+All text fields have non-alphanumeric characters removed and are lowercased before hashing.
+Binary IDs (`salutationId`, `countryId`) are normalized as hex-compatible strings.
+
+Field selection is configurable in Administration under plugin config `hashFields`.
 
 ## Console command
 
@@ -59,6 +55,20 @@ Use this command to backfill hashes for existing data:
 ```bash
 bin/console topdata:address-hashes:refresh
 ```
+
+## API Documentation
+
+### Get hashing recipe
+
+`GET /api/_action/topdata/address-hash-config`
+
+Returns the currently enabled fields and SQL template used for trigger generation.
+
+### Calculate hash (dry run)
+
+`POST /api/_action/topdata/calculate-address-hash`
+
+Accepts address payload (camelCase or snake_case keys) and returns the resulting fingerprint.
 
 ## License
 

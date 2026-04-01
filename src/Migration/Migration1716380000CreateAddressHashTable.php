@@ -4,6 +4,8 @@ namespace Topdata\TopdataAddressHashesSW6\Migration;
 
 use Doctrine\DBAL\Connection;
 use Shopware\Core\Framework\Migration\MigrationStep;
+use Topdata\TopdataAddressHashesSW6\Service\HashLogicService;
+use Topdata\TopdataAddressHashesSW6\Service\TriggerManager;
 
 class Migration1716380000CreateAddressHashTable extends MigrationStep
 {
@@ -54,62 +56,8 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
 
     private function _createTriggers(Connection $connection): void
     {
-        $this->_setupTriggersForTable($connection, 'customer_address', 'tdah_customer_address_extension');
-        $this->_setupTriggersForTable($connection, 'order_address', 'tdah_order_address_extension');
-    }
-
-    private function _setupTriggersForTable(Connection $connection, string $coreTable, string $extensionTable): void
-    {
-        $triggerIns = "tdah_{$coreTable}_ins";
-        $triggerUpd = "tdah_{$coreTable}_upd";
-        $hasVersion = $coreTable !== 'customer_address';
-
-        $connection->executeStatement("DROP TRIGGER IF EXISTS `$triggerIns`");
-        $connection->executeStatement("DROP TRIGGER IF EXISTS `$triggerUpd`");
-
-        $hashExpr = "SHA2(LOWER(CONCAT(
-            REGEXP_REPLACE(IFNULL(NEW.street, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.zipcode, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.city, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.phone_number, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.additional_address_line1, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.additional_address_line2, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.company, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.department, ''), '[^a-zA-Z0-9]', ''),
-            IFNULL(HEX(NEW.salutation_id), ''),
-            REGEXP_REPLACE(IFNULL(NEW.first_name, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.last_name, ''), '[^a-zA-Z0-9]', ''),
-            REGEXP_REPLACE(IFNULL(NEW.title, ''), '[^a-zA-Z0-9]', ''),
-            IFNULL(HEX(NEW.country_id), '')
-        )), 256)";
-
-        $replaceColumns = $hasVersion
-            ? '(address_id, address_version_id, fingerprint, created_at, updated_at)'
-            : '(address_id, fingerprint, created_at, updated_at)';
-        $replaceValues = $hasVersion
-            ? "NEW.id, NEW.version_id, $hashExpr, NOW(3), NULL"
-            : "NEW.id, $hashExpr, NOW(3), NULL";
-        $replaceSelect = $hasVersion
-            ? "SELECT NEW.id, NEW.version_id, $hashExpr, IFNULL(created_at, NOW(3)), NOW(3)
-            FROM (SELECT 1) AS dummy
-            LEFT JOIN `$extensionTable` ON address_id = NEW.id AND address_version_id = NEW.version_id"
-            : "SELECT NEW.id, $hashExpr, IFNULL(created_at, NOW(3)), NOW(3)
-            FROM (SELECT 1) AS dummy
-            LEFT JOIN `$extensionTable` ON address_id = NEW.id";
-
-        $connection->executeStatement(
-            "CREATE TRIGGER `$triggerIns` AFTER INSERT ON `$coreTable`
-            FOR EACH ROW
-            REPLACE INTO `$extensionTable` $replaceColumns
-            VALUES ($replaceValues);"
-        );
-
-        $connection->executeStatement(
-            "CREATE TRIGGER `$triggerUpd` AFTER UPDATE ON `$coreTable`
-            FOR EACH ROW
-            REPLACE INTO `$extensionTable` $replaceColumns
-            $replaceSelect;"
-        );
+        $triggerManager = new TriggerManager($connection, new HashLogicService());
+        $triggerManager->updateAllTriggers();
     }
 
     public function updateDestructive(Connection $connection): void

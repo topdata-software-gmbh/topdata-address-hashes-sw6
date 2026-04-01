@@ -3,9 +3,22 @@
 namespace Topdata\TopdataAddressHashesSW6;
 
 use Shopware\Core\Framework\Plugin;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Topdata\TopdataFoundationSW6\DependencyInjection\TopConfigRegistryCompilerPass;
 
 class TopdataAddressHashesSW6 extends Plugin
 {
+    public function build(ContainerBuilder $container): void
+    {
+        parent::build($container);
+        $container->addCompilerPass(new TopConfigRegistryCompilerPass(
+            self::class,
+            [
+                'hashFields' => 'hashFields',
+            ]
+        ));
+    }
+
     public function uninstall(\Shopware\Core\Framework\Plugin\Context\UninstallContext $uninstallContext): void
     {
         parent::uninstall($uninstallContext);
