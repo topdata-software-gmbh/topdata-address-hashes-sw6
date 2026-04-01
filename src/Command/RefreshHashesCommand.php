@@ -38,6 +38,15 @@ class RefreshHashesCommand extends Command
             REGEXP_REPLACE(IFNULL(street, ''), '[^a-zA-Z0-9]', ''),
             REGEXP_REPLACE(IFNULL(zipcode, ''), '[^a-zA-Z0-9]', ''),
             REGEXP_REPLACE(IFNULL(city, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(phone_number, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(additional_address_line1, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(additional_address_line2, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(company, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(department, ''), '[^a-zA-Z0-9]', ''),
+            IFNULL(HEX(salutation_id), ''),
+            REGEXP_REPLACE(IFNULL(first_name, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(last_name, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(title, ''), '[^a-zA-Z0-9]', ''),
             IFNULL(HEX(country_id), '')
         )), 256)";
 

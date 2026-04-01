@@ -37,11 +37,20 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
         $connection->executeStatement("DROP TRIGGER IF EXISTS `$triggerIns`");
         $connection->executeStatement("DROP TRIGGER IF EXISTS `$triggerUpd`");
 
-        // Hash: normalized street + zipcode + city + country id.
+        // Hash: normalized address and identity fields.
         $hashExpr = "SHA2(LOWER(CONCAT(
             REGEXP_REPLACE(IFNULL(NEW.street, ''), '[^a-zA-Z0-9]', ''),
             REGEXP_REPLACE(IFNULL(NEW.zipcode, ''), '[^a-zA-Z0-9]', ''),
             REGEXP_REPLACE(IFNULL(NEW.city, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.phone_number, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.additional_address_line1, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.additional_address_line2, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.company, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.department, ''), '[^a-zA-Z0-9]', ''),
+            IFNULL(HEX(NEW.salutation_id), ''),
+            REGEXP_REPLACE(IFNULL(NEW.first_name, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.last_name, ''), '[^a-zA-Z0-9]', ''),
+            REGEXP_REPLACE(IFNULL(NEW.title, ''), '[^a-zA-Z0-9]', ''),
             IFNULL(HEX(NEW.country_id), '')
         )), 256)";
 

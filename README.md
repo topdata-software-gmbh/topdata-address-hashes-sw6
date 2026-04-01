@@ -20,26 +20,40 @@ The hashes are stored in a separate table so Shopware core tables remain untouch
 ### Get the hash for a customer address
 
 ```sql
-SELECT ca.id, h.fingerprint
+SELECT ca.*, h.fingerprint
 FROM customer_address ca
-JOIN tdah_address_hash h ON ca.id = h.address_id
-	AND h.address_version_id = UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')
-WHERE ca.customer_id = UNHEX('...');
+         JOIN tdah_address_hash h ON ca.id = h.address_id
+    AND h.address_version_id = UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f');
 ```
 
 ### Get the hash for an order delivery address
 
 ```sql
-SELECT oa.id, h.fingerprint
+SELECT oa.*, h.fingerprint
 FROM order_address oa
 JOIN tdah_address_hash h ON oa.id = h.address_id
 	AND oa.version_id = h.address_version_id
-WHERE oa.id = UNHEX('...');
+;
 ```
 
 ### Hash logic
 
-The hash is SHA256 of `LOWER(STREET + ZIP + CITY + COUNTRY_HEX_ID)` with all non-alphanumeric characters removed.
+The fingerprint is SHA256 of the concatenation (in order) of the following normalized fields:
+- `street`
+- `zipcode`
+- `city`
+- `phone_number`
+- `additional_address_line1`
+- `additional_address_line2`
+- `company`
+- `department`
+- `salutation_id` (as HEX)
+- `first_name`
+- `last_name`
+- `title`
+- `country_id` (as HEX)
+
+All text fields have non-alphanumeric characters removed and are lowercased before hashing. Binary IDs are converted to hex strings.
 
 ## Console command
 
