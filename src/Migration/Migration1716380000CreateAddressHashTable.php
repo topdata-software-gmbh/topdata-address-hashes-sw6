@@ -66,5 +66,10 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
 
     public function updateDestructive(Connection $connection): void
     {
+        $connection->executeStatement("DROP TRIGGER IF EXISTS `tdah_customer_address_ins`");
+        $connection->executeStatement("DROP TRIGGER IF EXISTS `tdah_customer_address_upd`");
+        $connection->executeStatement("DROP TRIGGER IF EXISTS `tdah_order_address_ins`");
+        $connection->executeStatement("DROP TRIGGER IF EXISTS `tdah_order_address_upd`");
+        $connection->executeStatement("DROP TABLE IF EXISTS `tdah_address_hash`");
     }
 }
