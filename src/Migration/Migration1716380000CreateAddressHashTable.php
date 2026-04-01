@@ -22,14 +22,18 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
 
     private function createExtensionTable(Connection $connection, string $tableName): void
     {
+        $hasVersion = $tableName !== 'tdah_customer_address_extension';
+        $versionColumn = $hasVersion ? "`address_version_id` BINARY(16) NOT NULL," : '';
+        $primaryKey = $hasVersion ? 'PRIMARY KEY (`address_id`, `address_version_id`)' : 'PRIMARY KEY (`address_id`)';
+
         $connection->executeStatement(
             "CREATE TABLE IF NOT EXISTS `$tableName` (
                 `address_id` BINARY(16) NOT NULL,
-                `address_version_id` BINARY(16) NOT NULL,
+                $versionColumn
                 `fingerprint` VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
                 `created_at` DATETIME(3) NOT NULL,
                 `updated_at` DATETIME(3) NULL,
-                PRIMARY KEY (`address_id`, `address_version_id`),
+                $primaryKey,
                 INDEX `idx.fingerprint` (`fingerprint`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
@@ -45,6 +49,7 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
     {
         $triggerIns = "tdah_{$coreTable}_ins";
         $triggerUpd = "tdah_{$coreTable}_upd";
+        $hasVersion = $coreTable !== 'customer_address';
 
         $connection->executeStatement("DROP TRIGGER IF EXISTS `$triggerIns`");
         $connection->executeStatement("DROP TRIGGER IF EXISTS `$triggerUpd`");
@@ -65,24 +70,32 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
             IFNULL(HEX(NEW.country_id), '')
         )), 256)";
 
-        $versionExpr = $coreTable === 'customer_address'
-            ? "UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')"
-            : 'NEW.version_id';
+        $replaceColumns = $hasVersion
+            ? '(address_id, address_version_id, fingerprint, created_at, updated_at)'
+            : '(address_id, fingerprint, created_at, updated_at)';
+        $replaceValues = $hasVersion
+            ? "NEW.id, NEW.version_id, $hashExpr, NOW(3), NULL"
+            : "NEW.id, $hashExpr, NOW(3), NULL";
+        $replaceSelect = $hasVersion
+            ? "SELECT NEW.id, NEW.version_id, $hashExpr, IFNULL(created_at, NOW(3)), NOW(3)
+            FROM (SELECT 1) AS dummy
+            LEFT JOIN `$extensionTable` ON address_id = NEW.id AND address_version_id = NEW.version_id"
+            : "SELECT NEW.id, $hashExpr, IFNULL(created_at, NOW(3)), NOW(3)
+            FROM (SELECT 1) AS dummy
+            LEFT JOIN `$extensionTable` ON address_id = NEW.id";
 
         $connection->executeStatement(
             "CREATE TRIGGER `$triggerIns` AFTER INSERT ON `$coreTable`
             FOR EACH ROW
-            REPLACE INTO `$extensionTable` (address_id, address_version_id, fingerprint, created_at, updated_at)
-            VALUES (NEW.id, $versionExpr, $hashExpr, NOW(3), NULL);"
+            REPLACE INTO `$extensionTable` $replaceColumns
+            VALUES ($replaceValues);"
         );
 
         $connection->executeStatement(
             "CREATE TRIGGER `$triggerUpd` AFTER UPDATE ON `$coreTable`
             FOR EACH ROW
-            REPLACE INTO `$extensionTable` (address_id, address_version_id, fingerprint, created_at, updated_at)
-            SELECT NEW.id, $versionExpr, $hashExpr, IFNULL(created_at, NOW(3)), NOW(3)
-            FROM (SELECT 1) AS dummy
-            LEFT JOIN `$extensionTable` ON address_id = NEW.id AND address_version_id = $versionExpr;"
+            REPLACE INTO `$extensionTable` $replaceColumns
+            $replaceSelect;"
         );
     }
 

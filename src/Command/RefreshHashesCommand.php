@@ -22,7 +22,7 @@ class RefreshHashesCommand extends Command
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $output->writeln('Refreshing hashes for customer_address...');
-        $this->refreshTable('customer_address', 'tdah_customer_address_extension', "UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')");
+        $this->refreshTable('customer_address', 'tdah_customer_address_extension');
 
         $output->writeln('Refreshing hashes for order_address...');
         $this->refreshTable('order_address', 'tdah_order_address_extension', 'version_id');
@@ -32,7 +32,7 @@ class RefreshHashesCommand extends Command
         return Command::SUCCESS;
     }
 
-    private function refreshTable(string $table, string $extensionTable, string $versionField): void
+    private function refreshTable(string $table, string $extensionTable, ?string $versionField = null): void
     {
         $hashExpr = "SHA2(LOWER(CONCAT(
             REGEXP_REPLACE(IFNULL(street, ''), '[^a-zA-Z0-9]', ''),
@@ -50,9 +50,16 @@ class RefreshHashesCommand extends Command
             IFNULL(HEX(country_id), '')
         )), 256)";
 
+        $insertColumns = $versionField !== null
+            ? '(address_id, address_version_id, fingerprint, created_at, updated_at)'
+            : '(address_id, fingerprint, created_at, updated_at)';
+        $selectColumns = $versionField !== null
+            ? "id, $versionField, $hashExpr, NOW(3), NULL"
+            : "id, $hashExpr, NOW(3), NULL";
+
         $this->connection->executeStatement(
-            "REPLACE INTO `$extensionTable` (address_id, address_version_id, fingerprint, created_at, updated_at)
-            SELECT id, $versionField, $hashExpr, NOW(3), NULL FROM `$table`"
+            "REPLACE INTO `$extensionTable` $insertColumns
+            SELECT $selectColumns FROM `$table`"
         );
     }
 }
