@@ -18,7 +18,7 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
             "CREATE TABLE IF NOT EXISTS `tdah_address_hash` (
                 `address_id` BINARY(16) NOT NULL,
                 `address_version_id` BINARY(16) NOT NULL,
-                `fingerprint` VARCHAR(64) NOT NULL,
+                `fingerprint` VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
                 `updated_at` DATETIME(3) NOT NULL,
                 PRIMARY KEY (`address_id`, `address_version_id`),
                 INDEX `idx.tdah_fingerprint` (`fingerprint`)
