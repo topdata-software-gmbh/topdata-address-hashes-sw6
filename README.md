@@ -58,17 +58,92 @@ bin/console topdata:address-hashes:refresh
 
 ## API Documentation
 
+### Admin API Authentication (2-step process)
+
+Shopware 6 Admin API requires OAuth2 authentication. Here's the complete flow:
+
+**Step 0: Set environment variables**
+
+```bash
+export BASEURL="https://your-shop.com"
+export ADMIN_API_KEY="YOUR_ADMIN_API_KEY"
+export ADMIN_API_SECRET="YOUR_ADMIN_API_SECRET"
+```
+
+**Step 1: Get Bearer Token**
+
+```bash
+TOKEN=$(curl -s -X POST \
+  "$BASEURL/api/oauth/token" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"grant_type\": \"client_credentials\",
+    \"client_id\": \"$ADMIN_API_KEY\",
+    \"client_secret\": \"$ADMIN_API_SECRET\"
+  }" | jq -r '.access_token')
+
+echo "Token: $TOKEN"
+```
+
+**Step 2: Make API Calls**
+
+Use the token in the `Authorization: Bearer $TOKEN` header for all subsequent requests.
+
+---
+
 ### Get hashing recipe
 
-`GET /api/_action/topdata/address-hash-config`
+```bash
+curl -s -X GET \
+  "$BASEURL/api/_action/topdata/address-hash-config" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Accept: application/json" | jq
+```
 
-Returns the currently enabled fields and SQL template used for trigger generation.
+**Response:**
+```json
+{
+  "algorithm": "SHA256",
+  "normalization": "lowercase, non-alphanumeric removed",
+  "fields": ["street", "zipcode", "city", "lastName", "countryId"],
+  "sql_template": "LOWER(REGEXP_REPLACE(...))"
+}
+```
 
 ### Calculate hash (dry run)
 
-`POST /api/_action/topdata/calculate-address-hash`
+```bash
+curl -s -X POST \
+  "$BASEURL/api/_action/topdata/calculate-address-hash" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "street": "Musterstraße 12",
+    "zipcode": "80331",
+    "city": "München",
+    "lastName": "Mustermann",
+    "countryId": "2f798c64371d4de996cbf0fe15475a18"
+  }' | jq
+```
 
-Accepts address payload (camelCase or snake_case keys) and returns the resulting fingerprint.
+**Response:**
+```json
+{
+  "fingerprint": "a3f5c2...",
+  "input_received": { ... }
+}
+```
+
+### One-liner: Get token + call config endpoint
+
+```bash
+curl -s -X GET "$BASEURL/api/_action/topdata/address-hash-config" \
+  -H "Authorization: Bearer $(curl -s -X POST "$BASEURL/api/oauth/token" \
+    -H 'Content-Type: application/json' \
+    -d "{\"grant_type\":\"client_credentials\",\"client_id\":\"$ADMIN_API_KEY\",\"client_secret\":\"$ADMIN_API_SECRET\"}" \
+    | jq -r '.access_token')" \
+  -H "Accept: application/json" | jq
+```
 
 ## License
 
