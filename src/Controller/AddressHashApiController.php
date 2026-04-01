@@ -54,11 +54,16 @@ class AddressHashApiController extends AbstractTopdataApiController
             return $this->errorResponse('No address data provided', Response::HTTP_BAD_REQUEST);
         }
 
-        $hash = $this->hashLogicService->calculateHash($data);
+        $result = $this->hashLogicService->calculateHashDetailed($data);
 
         return $this->payloadResponse([
-            'fingerprint'    => $hash,
-            'input_received' => $data,
+            'fingerprint'    => $result['hash'],
+            'fields_used'    => $result['used'],
+            'fields_ignored' => $result['ignored'],
+            'fields_missing' => $result['missing'],
+            'config'         => [
+                'enabled_fields' => $this->hashLogicService->getEnabledFields(),
+            ],
         ]);
     }
 }

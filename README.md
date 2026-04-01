@@ -130,7 +130,64 @@ curl -s -X POST \
 ```json
 {
   "fingerprint": "a3f5c2...",
-  "input_received": { ... }
+  "fields_used": {
+    "street": { "original": "Musterstraße 12", "normalized": "musterstrae12" },
+    "zipcode": { "original": "80331", "normalized": "80331" },
+    "city": { "original": "München", "normalized": "mnchen" },
+    "lastName": { "original": "Mustermann", "normalized": "mustermann" },
+    "countryId": { "original": "2f798c64371d4de996cbf0fe15475a18", "normalized": "2f798c64371d4de996cbf0fe15475a18" }
+  },
+  "fields_ignored": {},
+  "fields_missing": [],
+  "config": {
+    "enabled_fields": ["street", "zipcode", "city", "lastName", "countryId"]
+  }
+}
+```
+
+### Calculate hash with ignored fields
+
+```bash
+curl -s -X POST \
+  "$BASEURL/api/_action/topdata/calculate-address-hash" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "street": "Musterstraße 12",
+    "zipcode": "80331",
+    "city": "München",
+    "lastName": "Mustermann",
+    "countryId": "2f798c64371d4de996cbf0fe15475a18",
+    "extraField": "ignored by hash"
+  }' | jq
+```
+
+**Relevant payload snippet:**
+```json
+{
+  "fields_ignored": {
+    "extraField": "ignored by hash"
+  }
+}
+```
+
+### Calculate hash with missing fields
+
+```bash
+curl -s -X POST \
+  "$BASEURL/api/_action/topdata/calculate-address-hash" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "street": "Musterstraße 12",
+    "city": "München"
+  }' | jq
+```
+
+**Relevant payload snippet:**
+```json
+{
+  "fields_missing": ["zipcode", "lastName", "countryId"]
 }
 ```
 

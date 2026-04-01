@@ -1,11 +1,11 @@
 ---
-filename: "_ai/backlog/active/260402_0109__IMPLEMENTATION_PLAN__enhance-address-hash-api-response.md"
+filename: "_ai/backlog/archive/260402_0109__IMPLEMENTATION_PLAN__enhance-address-hash-api-response.md"
 title: "Enhance Address Hash API Response with Field Usage Details"
 createdAt: 2026-04-02 01:09
 createdBy: Cascade [Claude 3.5 Sonnet]
 updatedAt: 2026-04-02 01:09
 updatedBy: Cascade [Claude 3.5 Sonnet]
-status: draft
+status: completed
 priority: medium
 tags: [api, hash-calculation, enhancement, visibility]
 project: topdata-address-hashes-sw6

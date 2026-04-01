@@ -64,10 +64,37 @@ class HashLogicService
      */
     public function calculateHash(array $data): string
     {
+        return $this->calculateHashDetailed($data)['hash'];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return array{hash: string, used: array<string, array{original: mixed, normalized: string}>, ignored: array<string, mixed>, missing: string[]}
+     */
+    public function calculateHashDetailed(array $data): array
+    {
+        $enabledFields = $this->getEnabledFields();
+        $used = [];
+        $ignored = [];
+        $missing = [];
         $concat = '';
 
-        foreach ($this->getEnabledFields() as $field) {
+        foreach ($data as $key => $value) {
+            $camelKey = $this->toCamelCase((string)$key);
+            if (!in_array($camelKey, $enabledFields, true) && !in_array((string)$key, $enabledFields, true)) {
+                $ignored[(string)$key] = $value;
+            }
+        }
+
+        foreach ($enabledFields as $field) {
             $value = $this->resolveInputValue($data, $field);
+            $wasProvided = $this->wasFieldProvided($data, $field);
+
+            if (!$wasProvided) {
+                $missing[] = $field;
+            }
+
+            $originalValue = $value;
 
             if (\in_array($field, ['salutationId', 'countryId'], true)) {
                 $value = str_replace('-', '', (string)$value);
@@ -75,10 +102,38 @@ class HashLogicService
                 $value = preg_replace('/[^a-zA-Z0-9]/', '', (string)$value) ?? '';
             }
 
-            $concat .= strtolower($value);
+            $normalizedValue = strtolower($value);
+            $concat .= $normalizedValue;
+
+            $used[$field] = [
+                'original' => $originalValue,
+                'normalized' => $normalizedValue,
+            ];
         }
 
-        return hash('sha256', $concat);
+        return [
+            'hash' => hash('sha256', $concat),
+            'used' => $used,
+            'ignored' => $ignored,
+            'missing' => $missing,
+        ];
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    private function wasFieldProvided(array $data, string $field): bool
+    {
+        if (array_key_exists($field, $data)) {
+            return true;
+        }
+
+        $snakeCaseField = strtolower((string)preg_replace('/(?<!^)[A-Z]/', '_$0', $field));
+        if (array_key_exists($snakeCaseField, $data)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -96,5 +151,10 @@ class HashLogicService
         }
 
         return '';
+    }
+
+    private function toCamelCase(string $string): string
+    {
+        return lcfirst(str_replace('_', '', ucwords($string, '_')));
     }
 }
