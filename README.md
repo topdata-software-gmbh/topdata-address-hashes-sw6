@@ -22,8 +22,7 @@ The hashes are stored in separate extension tables so Shopware core tables remai
 ```sql
 SELECT ca.*, h.fingerprint
 FROM customer_address ca
-        JOIN tdah_customer_address_extension h ON ca.id = h.address_id
-    AND h.address_version_id = UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f');
+JOIN tdah_customer_address_extension h ON ca.id = h.address_id
 ```
 
 ### Get the hash for an order delivery address
@@ -31,9 +30,7 @@ FROM customer_address ca
 ```sql
 SELECT oa.*, h.fingerprint
 FROM order_address oa
-JOIN tdah_order_address_extension h ON oa.id = h.address_id
-	AND oa.version_id = h.address_version_id
-;
+JOIN tdah_order_address_extension h ON oa.id = h.address_id AND oa.version_id = h.address_version_id
 ```
 
 ### Hash logic

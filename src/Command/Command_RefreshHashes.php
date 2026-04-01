@@ -12,7 +12,7 @@ use Symfony\Component\Console\Output\OutputInterface;
     name: 'topdata:address-hashes:refresh',
     description: 'Recalculates all address hashes for existing entries'
 )]
-class RefreshHashesCommand extends Command
+class Command_RefreshHashes extends Command
 {
     public function __construct(private readonly Connection $connection)
     {
