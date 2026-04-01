@@ -9,7 +9,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'address-hashes:refresh',
+    name: 'topdata:address-hashes:refresh',
     description: 'Recalculates all address hashes for existing entries'
 )]
 class RefreshHashesCommand extends Command
@@ -42,7 +42,7 @@ class RefreshHashesCommand extends Command
         )), 256)";
 
         $this->connection->executeStatement(
-            "REPLACE INTO `tdah_address_hash` (address_id, address_version_id, hash_value, updated_at)
+            "REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
             SELECT id, $versionField, $hashExpr, NOW(3) FROM `$table`"
         );
     }

@@ -27,7 +27,7 @@ Implemented a bulletproof address hashing system using MySQL triggers. Every rel
 - Trigger-based hashing on `INSERT` and `UPDATE` for `customer_address` and `order_address`.
 - Dedicated mapping table `tdah_address_hash` with composite primary key and hash index.
 - Normalization logic removes non-alphanumeric characters and lowercases before SHA256.
-- Backfill command `bin/console address-hashes:refresh` for existing datasets.
+- Backfill command `bin/console topdata:address-hashes:refresh` for existing datasets.
 
 ## Technical Decisions
 - Used SHA256 instead of MD5 for stronger collision resistance and future-proofing.
@@ -36,4 +36,4 @@ Implemented a bulletproof address hashing system using MySQL triggers. Every rel
 ## Testing Notes
 - Run migrations and verify `tdah_address_hash` exists.
 - Insert or update records in `customer_address` and `order_address`, then verify hash rows update automatically.
-- Execute `bin/console address-hashes:refresh` and confirm existing rows are populated/replaced.
+- Execute `bin/console topdata:address-hashes:refresh` and confirm existing rows are populated/replaced.

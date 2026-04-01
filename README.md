@@ -20,7 +20,7 @@ The hashes are stored in a separate table so Shopware core tables remain untouch
 ### Get the hash for a customer address
 
 ```sql
-SELECT ca.id, h.hash_value
+SELECT ca.id, h.fingerprint
 FROM customer_address ca
 JOIN tdah_address_hash h ON ca.id = h.address_id
 	AND h.address_version_id = UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')
@@ -30,7 +30,7 @@ WHERE ca.customer_id = UNHEX('...');
 ### Get the hash for an order delivery address
 
 ```sql
-SELECT oa.id, h.hash_value
+SELECT oa.id, h.fingerprint
 FROM order_address oa
 JOIN tdah_address_hash h ON oa.id = h.address_id
 	AND oa.version_id = h.address_version_id
@@ -46,7 +46,7 @@ The hash is SHA256 of `LOWER(STREET + ZIP + CITY + COUNTRY_HEX_ID)` with all non
 Use this command to backfill hashes for existing data:
 
 ```bash
-bin/console address-hashes:refresh
+bin/console topdata:address-hashes:refresh
 ```
 
 ## License

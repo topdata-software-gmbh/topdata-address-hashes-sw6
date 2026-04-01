@@ -54,10 +54,10 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
             CREATE TABLE IF NOT EXISTS `tdah_address_hash` (
                 `address_id` BINARY(16) NOT NULL,
                 `address_version_id` BINARY(16) NOT NULL,
-                `hash_value` VARCHAR(64) NOT NULL,
+                `fingerprint` VARCHAR(64) NOT NULL,
                 `updated_at` DATETIME(3) NOT NULL,
                 PRIMARY KEY (`address_id`, `address_version_id`),
-                INDEX `idx.tdah_hash_value` (`hash_value`)
+                INDEX `idx.tdah_fingerprint` (`fingerprint`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         ");
 
@@ -89,14 +89,14 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
         $connection->executeStatement("
             CREATE TRIGGER `$triggerIns` AFTER INSERT ON `$table`
             FOR EACH ROW 
-            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, hash_value, updated_at)
+            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
             VALUES (NEW.id, $versionExpr, $hashExpr, NOW(3));
         ");
 
         $connection->executeStatement("
             CREATE TRIGGER `$triggerUpd` AFTER UPDATE ON `$table`
             FOR EACH ROW 
-            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, hash_value, updated_at)
+            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
             VALUES (NEW.id, $versionExpr, $hashExpr, NOW(3));
         ");
     }
@@ -124,7 +124,7 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 
 #[AsCommand(
-    name: 'address-hashes:refresh',
+    name: 'topdata:address-hashes:refresh',
     description: 'Recalculates all address hashes for existing entries'
 )]
 class RefreshHashesCommand extends Command
@@ -156,7 +156,7 @@ class RefreshHashesCommand extends Command
         )), 256)";
 
         $this->connection->executeStatement("
-            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, hash_value, updated_at)
+            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
             SELECT id, $versionField, $hashExpr, NOW(3) FROM `$table`
         ");
     }
@@ -206,7 +206,7 @@ The hashes are stored in a separate table to keep the Shopware core clean.
 
 ### How to get the hash for a Customer Address:
 ```sql
-SELECT ca.id, h.hash_value 
+SELECT ca.id, h.fingerprint 
 FROM customer_address ca
 JOIN tdah_address_hash h ON ca.id = h.address_id 
   AND h.address_version_id = UNHEX('0fa91ce3e96a4ce293c45c795a1ee31f')
@@ -215,7 +215,7 @@ WHERE ca.customer_id = UNHEX('...');
 
 ### How to get the hash for an Order Delivery Address:
 ```sql
-SELECT oa.id, h.hash_value 
+SELECT oa.id, h.fingerprint 
 FROM order_address oa
 JOIN tdah_address_hash h ON oa.id = h.address_id 
   AND oa.version_id = h.address_version_id
@@ -262,6 +262,6 @@ documentType: IMPLEMENTATION_REPORT
     - Dedicated mapping table `tdah_address_hash`.
     - Normalization logic handles variations in formatting (spaces, special chars).
 4. **Technical Decisions**: Chose SHA256 over MD5 for future-proofing and collision avoidance. Used triggers to ensure that even manual DB imports by other plugins are covered.
-5. **Testing Notes**: Verify by changing an address in the Shopware Admin and checking if the `tdah_address_hash` table reflects the update. Run `bin/console address-hashes:refresh` to populate existing data.
+5. **Testing Notes**: Verify by changing an address in the Shopware Admin and checking if the `tdah_address_hash` table reflects the update. Run `bin/console topdata:address-hashes:refresh` to populate existing data.
 
 

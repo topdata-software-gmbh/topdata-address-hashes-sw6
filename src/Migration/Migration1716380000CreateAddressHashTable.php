@@ -18,18 +18,18 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
             "CREATE TABLE IF NOT EXISTS `tdah_address_hash` (
                 `address_id` BINARY(16) NOT NULL,
                 `address_version_id` BINARY(16) NOT NULL,
-                `hash_value` VARCHAR(64) NOT NULL,
+                `fingerprint` VARCHAR(64) NOT NULL,
                 `updated_at` DATETIME(3) NOT NULL,
                 PRIMARY KEY (`address_id`, `address_version_id`),
-                INDEX `idx.tdah_hash_value` (`hash_value`)
+                INDEX `idx.tdah_fingerprint` (`fingerprint`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
 
-        $this->createTrigger($connection, 'customer_address');
-        $this->createTrigger($connection, 'order_address');
+        $this->_createTrigger($connection, 'customer_address');
+        $this->_createTrigger($connection, 'order_address');
     }
 
-    private function createTrigger(Connection $connection, string $table): void
+    protected function _createTrigger(Connection $connection, string $table): void
     {
         $triggerIns = "tdah_{$table}_ins";
         $triggerUpd = "tdah_{$table}_upd";
@@ -52,14 +52,14 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
         $connection->executeStatement(
             "CREATE TRIGGER `$triggerIns` AFTER INSERT ON `$table`
             FOR EACH ROW
-            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, hash_value, updated_at)
+            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
             VALUES (NEW.id, $versionExpr, $hashExpr, NOW(3));"
         );
 
         $connection->executeStatement(
             "CREATE TRIGGER `$triggerUpd` AFTER UPDATE ON `$table`
             FOR EACH ROW
-            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, hash_value, updated_at)
+            REPLACE INTO `tdah_address_hash` (address_id, address_version_id, fingerprint, updated_at)
             VALUES (NEW.id, $versionExpr, $hashExpr, NOW(3));"
         );
     }
