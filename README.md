@@ -106,7 +106,7 @@ curl -s -X GET \
   "algorithm": "SHA256",
   "normalization": "lowercase, non-alphanumeric removed",
   "fields": ["street", "zipcode", "city", "lastName", "countryId"],
-  "sql_template": "LOWER(REGEXP_REPLACE(...))"
+  "sqlTemplate": "LOWER(REGEXP_REPLACE(...))"
 }
 ```
 
@@ -130,17 +130,17 @@ curl -s -X POST \
 ```json
 {
   "fingerprint": "a3f5c2...",
-  "fields_used": {
+  "fieldsUsed": {
     "street": { "original": "Musterstraße 12", "normalized": "musterstrae12" },
     "zipcode": { "original": "80331", "normalized": "80331" },
     "city": { "original": "München", "normalized": "mnchen" },
     "lastName": { "original": "Mustermann", "normalized": "mustermann" },
     "countryId": { "original": "2f798c64371d4de996cbf0fe15475a18", "normalized": "2f798c64371d4de996cbf0fe15475a18" }
   },
-  "fields_ignored": {},
-  "fields_missing": [],
+  "fieldsIgnored": {},
+  "fieldsMissing": [],
   "config": {
-    "enabled_fields": ["street", "zipcode", "city", "lastName", "countryId"]
+    "enabledFields": ["street", "zipcode", "city", "lastName", "countryId"]
   }
 }
 ```
@@ -165,7 +165,7 @@ curl -s -X POST \
 **Relevant payload snippet:**
 ```json
 {
-  "fields_ignored": {
+  "fieldsIgnored": {
     "extraField": "ignored by hash"
   }
 }
@@ -187,7 +187,7 @@ curl -s -X POST \
 **Relevant payload snippet:**
 ```json
 {
-  "fields_missing": ["zipcode", "lastName", "countryId"]
+  "fieldsMissing": ["zipcode", "lastName", "countryId"]
 }
 ```
 
