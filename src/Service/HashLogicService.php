@@ -4,6 +4,11 @@ namespace Topdata\TopdataAddressHashesSW6\Service;
 
 use Topdata\TopdataFoundationSW6\Service\TopConfigRegistry;
 
+/**
+ * Service for calculating address hashes based on configurable fields.
+ * This service normalizes address data and generates SHA-256 hashes for deduplication purposes.
+ * It supports various address fields and allows configuration of which fields to include in the hash calculation.
+ */
 class HashLogicService
 {
     private const DEFAULT_FIELDS = ['street', 'zipcode', 'city', 'lastName', 'countryId'];
@@ -29,7 +34,11 @@ class HashLogicService
     }
 
     /**
-     * @return string[]
+     * Returns the list of enabled fields for hash calculation.
+     * If configuration is not available, returns default fields.
+     * Filters out any fields that are not defined in FIELD_MAP.
+     *
+     * @return string[] List of enabled field names
      */
     public function getEnabledFields(): array
     {
@@ -49,18 +58,31 @@ class HashLogicService
         }
     }
 
+    /**
+     * Generates SQL expression for calculating address hash in database.
+     * Uses SHA-256 algorithm with concatenated normalized field values.
+     *
+     * @param string $alias SQL table alias to use in the expression
+     * @return string SQL expression for hash calculation
+     */
     public function getSqlExpression(string $alias = 'NEW'): string
     {
+        // ---- Build SQL parts for each enabled field
         $parts = [];
         foreach ($this->getEnabledFields() as $field) {
             $parts[] = sprintf(self::FIELD_MAP[$field]['sql'], $alias);
         }
 
+        // ---- Combine parts into final SQL expression
         return 'SHA2(LOWER(CONCAT(' . implode(', ', $parts) . ')), 256)';
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Calculates a hash for the given address data.
+     * Uses only enabled fields and normalizes the values before hashing.
+     *
+     * @param array<string, mixed> $data Address data array
+     * @return string SHA-256 hash of the address data
      */
     public function calculateHash(array $data): string
     {
@@ -68,17 +90,23 @@ class HashLogicService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Calculates a hash for the given address data with detailed information about the process.
+     * Returns the hash along with information about used, ignored, and missing fields.
+     *
+     * @param array<string, mixed> $data Address data array
      * @return array{hash: string, used: array<string, array{original: mixed, normalized: string}>, ignored: array<string, mixed>, missing: string[]}
+     *         Hash calculation result with detailed information
      */
     public function calculateHashDetailed(array $data): array
     {
+        // ---- Initialize variables and get enabled fields
         $enabledFields = $this->getEnabledFields();
         $used = [];
         $ignored = [];
         $missing = [];
         $concat = '';
 
+        // ---- Process input data and identify ignored fields
         foreach ($data as $key => $value) {
             $camelKey = $this->toCamelCase((string)$key);
             if (!in_array($camelKey, $enabledFields, true) && !in_array((string)$key, $enabledFields, true)) {
@@ -86,6 +114,7 @@ class HashLogicService
             }
         }
 
+        // ---- Process enabled fields and prepare for hashing
         foreach ($enabledFields as $field) {
             $value = $this->resolveInputValue($data, $field);
             $wasProvided = $this->wasFieldProvided($data, $field);
@@ -106,21 +135,27 @@ class HashLogicService
             $concat .= $normalizedValue;
 
             $used[$field] = [
-                'original' => $originalValue,
+                'original'   => $originalValue,
                 'normalized' => $normalizedValue,
             ];
         }
 
+        // ---- Calculate final hash and return results
         return [
-            'hash' => hash('sha256', $concat),
-            'used' => $used,
+            'hash'    => hash('sha256', $concat),
+            'used'    => $used,
             'ignored' => $ignored,
             'missing' => $missing,
         ];
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Checks if a field was provided in the input data.
+     * Checks both camelCase and snake_case versions of the field name.
+     *
+     * @param array<string, mixed> $data Input data array
+     * @param string $field Field name to check
+     * @return bool True if the field was provided in the data
      */
     private function wasFieldProvided(array $data, string $field): bool
     {
@@ -137,7 +172,12 @@ class HashLogicService
     }
 
     /**
-     * @param array<string, mixed> $data
+     * Resolves the value for a field from the input data.
+     * Checks both camelCase and snake_case versions of the field name.
+     *
+     * @param array<string, mixed> $data Input data array
+     * @param string $field Field name to resolve
+     * @return mixed The field value or empty string if not found
      */
     private function resolveInputValue(array $data, string $field): mixed
     {
@@ -153,6 +193,12 @@ class HashLogicService
         return '';
     }
 
+    /**
+     * Converts a snake_case string to camelCase.
+     *
+     * @param string $string Input string in snake_case
+     * @return string String converted to camelCase
+     */
     private function toCamelCase(string $string): string
     {
         return lcfirst(str_replace('_', '', ucwords($string, '_')));
