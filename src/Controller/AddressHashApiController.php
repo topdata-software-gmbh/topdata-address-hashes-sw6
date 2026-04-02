@@ -27,7 +27,7 @@ class AddressHashApiController extends AbstractTopdataApiController
             'algorithm'     => 'SHA256',
             'normalization' => 'lowercase, non-alphanumeric removed',
             'fields'        => $this->hashLogicService->getEnabledFields(),
-            'sql_template'  => $this->hashLogicService->getSqlExpression('TABLE_ALIAS'),
+            'sqlTemplate'  => $this->hashLogicService->getSqlExpression('TABLE_ALIAS'),
         ]);
     }
 
@@ -58,11 +58,11 @@ class AddressHashApiController extends AbstractTopdataApiController
 
         return $this->payloadResponse([
             'fingerprint'    => $result['hash'],
-            'fields_used'    => $result['used'],
-            'fields_ignored' => $result['ignored'],
-            'fields_missing' => $result['missing'],
+            'fieldsUsed'    => $result['used'],
+            'fieldsIgnored' => $result['ignored'],
+            'fieldsMissing' => $result['missing'],
             'config'         => [
-                'enabled_fields' => $this->hashLogicService->getEnabledFields(),
+                'enabledFields' => $this->hashLogicService->getEnabledFields(),
             ],
         ]);
     }
