@@ -19,17 +19,23 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
         $this->_createExtensionTable($connection, 'tdah_customer_address_extension');
         $this->_createExtensionTable($connection, 'tdah_order_address_extension');
 
-        $connection->executeStatement("
-            ALTER TABLE `tdah_customer_address_extension`
-            ADD CONSTRAINT `fk.tdah_customer.address_id`
-            FOREIGN KEY (`address_id`) REFERENCES `customer_address` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
-        ");
+        $this->_createForeignKeyIfMissing(
+            $connection,
+            'tdah_customer_address_extension',
+            'fk.tdah_customer.address_id',
+            'ALTER TABLE `tdah_customer_address_extension`
+                ADD CONSTRAINT `fk.tdah_customer.address_id`
+                FOREIGN KEY (`address_id`) REFERENCES `customer_address` (`id`) ON DELETE CASCADE ON UPDATE CASCADE'
+        );
 
-        $connection->executeStatement("
-            ALTER TABLE `tdah_order_address_extension`
-            ADD CONSTRAINT `fk.tdah_order.address_id`
-            FOREIGN KEY (`address_id`, `address_version_id`) REFERENCES `order_address` (`id`, `version_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-        ");
+        $this->_createForeignKeyIfMissing(
+            $connection,
+            'tdah_order_address_extension',
+            'fk.tdah_order.address_id',
+            'ALTER TABLE `tdah_order_address_extension`
+                ADD CONSTRAINT `fk.tdah_order.address_id`
+                FOREIGN KEY (`address_id`, `address_version_id`) REFERENCES `order_address` (`id`, `version_id`) ON DELETE CASCADE ON UPDATE CASCADE'
+        );
 
         $this->_createTriggers($connection);
     }
@@ -51,6 +57,56 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
                 INDEX `idx.fingerprint` (`fingerprint`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
         );
+    }
+
+    private function _createForeignKeyIfMissing(
+        Connection $connection,
+        string $tableName,
+        string $constraintName,
+        string $ddl
+    ): void
+    {
+        $exists = (int) $connection->fetchOne(
+            'SELECT COUNT(*)
+            FROM information_schema.REFERENTIAL_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+                AND TABLE_NAME = :tableName
+                AND CONSTRAINT_NAME = :constraintName',
+            [
+                'tableName' => $tableName,
+                'constraintName' => $constraintName,
+            ]
+        );
+
+        if ($exists > 0) {
+            return;
+        }
+
+        $constraintTableName = $connection->fetchOne(
+            'SELECT TABLE_NAME
+            FROM information_schema.REFERENTIAL_CONSTRAINTS
+            WHERE CONSTRAINT_SCHEMA = DATABASE()
+                AND CONSTRAINT_NAME = :constraintName
+            LIMIT 1',
+            [
+                'constraintName' => $constraintName,
+            ]
+        );
+
+        if (
+            is_string($constraintTableName)
+            && $constraintTableName !== ''
+            && $constraintTableName !== $tableName
+        ) {
+            $alternateConstraintName = substr($constraintName . '_tdah', 0, 64);
+            $ddl = str_replace(
+                "`$constraintName`",
+                "`$alternateConstraintName`",
+                $ddl
+            );
+        }
+
+        $connection->executeStatement($ddl);
     }
 
 
