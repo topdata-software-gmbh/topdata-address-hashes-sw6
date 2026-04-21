@@ -15,7 +15,7 @@ class CustomerAddressExtension extends EntityExtension
     {
         $collection->add(
             (new OneToOneAssociationField(
-                'fingerprint',
+                'topdataAddressHash',
                 'id',
                 'address_id',
                 CustomerAddressHashDefinition::class,

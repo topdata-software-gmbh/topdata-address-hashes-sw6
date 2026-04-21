@@ -15,7 +15,7 @@ class OrderAddressExtension extends EntityExtension
     {
         $collection->add(
             (new OneToOneAssociationField(
-                'fingerprint',
+                'topdataAddressHash',
                 'id',
                 'address_id',
                 OrderAddressHashDefinition::class,
