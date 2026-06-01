@@ -136,7 +136,7 @@ class HashLogicService
         $concat = '';
 
         foreach ($data as $key => $value) {
-            $camelKey = $this->toCamelCase((string)$key);
+            $camelKey = self::_snakeToCamelCase((string)$key);
             if (!in_array($camelKey, $enabledFields, true) && !in_array((string)$key, $enabledFields, true)) {
                 $ignored[(string)$key] = $value;
             }
@@ -238,11 +238,11 @@ class HashLogicService
     /**
      * Converts a snake_case string to camelCase.
      *
-     * @param string $string Input string in snake_case
+     * @param string $snake Input string in snake_case
      * @return string String converted to camelCase
      */
-    private function toCamelCase(string $string): string
+    private static function _snakeToCamelCase(string $snake): string
     {
-        return lcfirst(str_replace('_', '', ucwords($string, '_')));
+        return lcfirst(str_replace('_', '', ucwords($snake, '_')));
     }
 }
