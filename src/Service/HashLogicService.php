@@ -2,12 +2,12 @@
 
 namespace Topdata\TopdataAddressHashesSW6\Service;
 
+use Doctrine\DBAL\Connection;
 use Topdata\TopdataFoundationSW6\Service\TopConfigRegistry;
 
 /**
  * Service for calculating address hashes based on configurable fields.
  * This service normalizes address data and generates SHA-256 hashes for deduplication purposes.
- * It supports various address fields and allows configuration of which fields to include in the hash calculation.
  */
 class HashLogicService
 {
@@ -22,99 +22,97 @@ class HashLogicService
         'additionalAddressLine2' => ['sql' => "REGEXP_REPLACE(IFNULL(%s.additional_address_line2, ''), '[^a-zA-Z0-9]', '')", 'api' => 'additionalAddressLine2'],
         'company'                => ['sql' => "REGEXP_REPLACE(IFNULL(%s.company, ''), '[^a-zA-Z0-9]', '')", 'api' => 'company'],
         'department'             => ['sql' => "REGEXP_REPLACE(IFNULL(%s.department, ''), '[^a-zA-Z0-9]', '')", 'api' => 'department'],
-        'salutationId'           => ['sql' => "IFNULL(HEX(%s.salutation_id), '')", 'api' => 'salutationId'],
+        'salutationId'           => ['sql' => "IFNULL((SELECT salutation_key FROM salutation WHERE id = %s.salutation_id), '')", 'api' => 'salutationId'],
         'firstName'              => ['sql' => "REGEXP_REPLACE(IFNULL(%s.first_name, ''), '[^a-zA-Z0-9]', '')", 'api' => 'firstName'],
         'lastName'               => ['sql' => "REGEXP_REPLACE(IFNULL(%s.last_name, ''), '[^a-zA-Z0-9]', '')", 'api' => 'lastName'],
         'title'                  => ['sql' => "REGEXP_REPLACE(IFNULL(%s.title, ''), '[^a-zA-Z0-9]', '')", 'api' => 'title'],
-        'countryId'              => ['sql' => "IFNULL(HEX(%s.country_id), '')", 'api' => 'countryId'],
+        'countryId'              => ['sql' => "IFNULL((SELECT iso FROM country WHERE id = %s.country_id), '')", 'api' => 'countryId'],
     ];
 
-    public function __construct(private readonly ?TopConfigRegistry $topConfigRegistry = null)
-    {
+    public function __construct(
+        private readonly Connection $connection,
+        private readonly ?TopConfigRegistry $topConfigRegistry = null
+    ) {
     }
 
-    /**
-     * Returns the list of enabled fields for hash calculation.
-     * If configuration is not available, returns default fields.
-     * Filters out any fields that are not defined in FIELD_MAP.
-     *
-     * @return string[] List of enabled field names
-     */
     public function getEnabledFields(): array
     {
         try {
             if ($this->topConfigRegistry === null) {
-                return self::DEFAULT_FIELDS;
+                $fields = self::DEFAULT_FIELDS;
+            } else {
+                $fields = $this->topConfigRegistry->getTopConfig('TopdataAddressHashesSW6')->get('hashFields');
+                if (!\is_array($fields) || $fields === []) {
+                    $fields = self::DEFAULT_FIELDS;
+                }
             }
 
-            $fields = $this->topConfigRegistry->getTopConfig('TopdataAddressHashesSW6')->get('hashFields');
-            if (!\is_array($fields) || $fields === []) {
-                return self::DEFAULT_FIELDS;
-            }
+            $filtered = array_values(array_filter($fields, static fn($field): bool => \is_string($field) && isset(self::FIELD_MAP[$field])));
+            sort($filtered);
 
-            return array_values(array_filter($fields, static fn($field): bool => \is_string($field) && isset(self::FIELD_MAP[$field])));
+            return $filtered;
         } catch (\Throwable) {
-            return self::DEFAULT_FIELDS;
+            $default = self::DEFAULT_FIELDS;
+            sort($default);
+            return $default;
         }
     }
 
     public function getHashFieldsJson(): string
     {
-        $fields = $this->getEnabledFields();
-        sort($fields);
-
-        return json_encode($fields, JSON_THROW_ON_ERROR);
+        return json_encode($this->getEnabledFields(), JSON_THROW_ON_ERROR);
     }
 
-    /**
-     * Generates SQL expression for calculating address hash in database.
-     * Uses SHA-256 algorithm with concatenated normalized field values.
-     *
-     * @param string $alias SQL table alias to use in the expression
-     * @return string SQL expression for hash calculation
-     */
     public function getSqlExpression(string $alias = 'NEW'): string
     {
-        // ---- Build SQL parts for each enabled field
         $parts = [];
         foreach ($this->getEnabledFields() as $field) {
             $parts[] = sprintf(self::FIELD_MAP[$field]['sql'], $alias);
         }
 
-        // ---- Combine parts into final SQL expression
         return 'SHA2(LOWER(CONCAT(' . implode(', ', $parts) . ')), 256)';
     }
 
-    /**
-     * Calculates a hash for the given address data.
-     * Uses only enabled fields and normalizes the values before hashing.
-     *
-     * @param array<string, mixed> $data Address data array
-     * @return string SHA-256 hash of the address data
-     */
+    public function refreshAllHashes(): void
+    {
+        $hashFieldsJson = $this->getHashFieldsJson();
+        $hashFieldsSqlLiteral = "'" . str_replace("'", "''", $hashFieldsJson) . "'";
+
+        $this->refreshTable('customer_address', 'tdah_customer_address_extension', null, $hashFieldsSqlLiteral);
+        $this->refreshTable('order_address', 'tdah_order_address_extension', 'version_id', $hashFieldsSqlLiteral);
+    }
+
+    private function refreshTable(string $table, string $extensionTable, ?string $versionField, string $hashFieldsSqlLiteral): void
+    {
+        $hashExpr = $this->getSqlExpression($table);
+
+        $insertColumns = $versionField !== null
+            ? '(address_id, address_version_id, fingerprint, hash_fields, hash_fields_changed_at, hash_changed_at, created_at, updated_at)'
+            : '(address_id, fingerprint, hash_fields, hash_fields_changed_at, hash_changed_at, created_at, updated_at)';
+
+        $selectColumns = $versionField !== null
+            ? "id, {$versionField}, {$hashExpr}, {$hashFieldsSqlLiteral}, NOW(3), NOW(3), NOW(3), NULL"
+            : "id, {$hashExpr}, {$hashFieldsSqlLiteral}, NOW(3), NOW(3), NOW(3), NULL";
+
+        $this->connection->executeStatement(
+            "REPLACE INTO `{$extensionTable}` {$insertColumns}
+            SELECT {$selectColumns} FROM `{$table}`"
+        );
+    }
+
     public function calculateHash(array $data): string
     {
         return $this->calculateHashDetailed($data)['hash'];
     }
 
-    /**
-     * Calculates a hash for the given address data with detailed information about the process.
-     * Returns the hash along with information about used, ignored, and missing fields.
-     *
-     * @param array<string, mixed> $data Address data array
-     * @return array{hash: string, used: array<string, array{original: mixed, normalized: string}>, ignored: array<string, mixed>, missing: string[]}
-     *         Hash calculation result with detailed information
-     */
     public function calculateHashDetailed(array $data): array
     {
-        // ---- Initialize variables and get enabled fields
         $enabledFields = $this->getEnabledFields();
         $used = [];
         $ignored = [];
         $missing = [];
         $concat = '';
 
-        // ---- Process input data and identify ignored fields
         foreach ($data as $key => $value) {
             $camelKey = $this->toCamelCase((string)$key);
             if (!in_array($camelKey, $enabledFields, true) && !in_array((string)$key, $enabledFields, true)) {
@@ -122,7 +120,6 @@ class HashLogicService
             }
         }
 
-        // ---- Process enabled fields and prepare for hashing
         foreach ($enabledFields as $field) {
             $value = $this->resolveInputValue($data, $field);
             $wasProvided = $this->wasFieldProvided($data, $field);
@@ -134,12 +131,28 @@ class HashLogicService
             $originalValue = $value;
 
             if (\in_array($field, ['salutationId', 'countryId'], true)) {
-                $value = str_replace('-', '', (string)$value);
+                $rawHex = str_replace('-', '', (string)$value);
+                if (strlen($rawHex) === 32 && ctype_xdigit($rawHex)) {
+                    if ($field === 'countryId') {
+                        $dbVal = $this->connection->fetchOne(
+                            'SELECT iso FROM country WHERE id = UNHEX(:id)',
+                            ['id' => $rawHex]
+                        );
+                    } else {
+                        $dbVal = $this->connection->fetchOne(
+                            'SELECT salutation_key FROM salutation WHERE id = UNHEX(:id)',
+                            ['id' => $rawHex]
+                        );
+                    }
+                    $value = $dbVal ?: '';
+                } else {
+                    $value = (string)$originalValue;
+                }
             } else {
                 $value = preg_replace('/[^a-zA-Z0-9]/', '', (string)$value) ?? '';
             }
 
-            $normalizedValue = strtolower($value);
+            $normalizedValue = strtolower((string)$value);
             $concat .= $normalizedValue;
 
             $used[$field] = [
@@ -148,7 +161,6 @@ class HashLogicService
             ];
         }
 
-        // ---- Calculate final hash and return results
         return [
             'hash'    => hash('sha256', $concat),
             'used'    => $used,

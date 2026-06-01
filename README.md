@@ -44,7 +44,9 @@ Default fields are:
 - `countryId`
 
 All text fields have non-alphanumeric characters removed and are lowercased before hashing.
-Binary IDs (`salutationId`, `countryId`) are normalized as hex-compatible strings.
+Salutations (`salutationId`) are resolved to their global `salutation_key` (e.g. `mr`, `mrs`).
+Country values (`countryId`) are resolved to their 2-character ISO code (e.g. `DE`, `US`).
+This ensures fingerprints are stable across staging, production, and multi-tenant environments.
 
 Field selection is configurable in Administration under plugin config `hashFields`.
 
@@ -73,6 +75,23 @@ FROM customer_address ca
 JOIN tdah_customer_address_extension h ON ca.id = h.address_id
 WHERE h.hash_fields IS NULL
    OR h.hash_fields != '["city","countryId","lastName","street","zipcode"]';
+```
+
+### Environment-Independent Fingerprints
+
+To ensure fingerprints are 100% stable across staging systems, migration targets, and multi-tenant instances:
+- **Country Fields** are evaluated using their global 2-character ISO codes (e.g., `DE`, `US`), rather than the environment's auto-generated `country_id`.
+- **Salutations** are evaluated using their global `salutation_key` (e.g., `mr`, `mrs`, `company`), rather than the transient `salutation_id`.
+
+Additionally, hashes are processed in alphabetical order regardless of selection order to maintain complete configuration determinism.
+
+### Background Queue Processing
+
+When you change the configuration under `hashFields`, the MySQL triggers are updated instantly, and a background task (`RefreshHashesMessage`) is queued.
+
+Ensure that your background worker queue consumer is running:
+```bash
+bin/console messenger:consume
 ```
 
 ## Console command

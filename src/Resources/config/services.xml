@@ -24,15 +24,19 @@
         </service>
 
         <service id="Topdata\TopdataAddressHashesSW6\Command\Command_RefreshHashes">
-            <argument type="service" id="Doctrine\DBAL\Connection"/>
             <argument type="service" id="Topdata\TopdataAddressHashesSW6\Service\HashLogicService"/>
             <tag name="console.command"/>
         </service>
 
-
         <service id="Topdata\TopdataAddressHashesSW6\Subscriber\ConfigChangeSubscriber">
             <argument type="service" id="Topdata\TopdataAddressHashesSW6\Service\TriggerManager"/>
+            <argument type="service" id="Doctrine\DBAL\Connection"/>
+            <argument type="service" id="messenger.default_bus"/>
             <tag name="kernel.event_subscriber"/>
+        </service>
+
+        <service id="Topdata\TopdataAddressHashesSW6\Message\RefreshHashesHandler" autowire="true">
+            <tag name="messenger.message_handler"/>
         </service>
 
 
