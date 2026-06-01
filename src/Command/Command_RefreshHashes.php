@@ -53,10 +53,28 @@ class Command_RefreshHashes extends AbstractTopdataCommand
 
         try {
             // ---- Execute the hash refresh logic ----
-            $this->hashLogicService->refreshAllHashes();
-            
+            $results = $this->hashLogicService->refreshAllHashes();
+
+            // ---- Display per-table results ----
+            $totalProcessed = 0;
+            $totalInserted = 0;
+            $totalUpdated = 0;
+
+            foreach ($results as $table => $counts) {
+                $totalProcessed += $counts['processed'];
+                $totalInserted += $counts['inserted'];
+                $totalUpdated += $counts['updated'];
+                CliLogger::info(sprintf(
+                    '  %s: %d processed (%d inserted, %d updated)',
+                    $table, $counts['processed'], $counts['inserted'], $counts['updated']
+                ));
+            }
+
             // ---- Log success and return ----
-            CliLogger::success('Successfully refreshed all address hashes.');
+            CliLogger::success(sprintf(
+                'Successfully refreshed all address hashes (%d total, %d inserted, %d updated).',
+                $totalProcessed, $totalInserted, $totalUpdated
+            ));
             return Command::SUCCESS;
         } catch (\Throwable $e) {
             // ---- Handle errors ----

@@ -73,16 +73,24 @@ class HashLogicService
         return 'SHA2(LOWER(CONCAT(' . implode(', ', $parts) . ')), 256)';
     }
 
-    public function refreshAllHashes(): void
+    /**
+     * @return array<string, array{processed: int, inserted: int, updated: int}>
+     */
+    public function refreshAllHashes(): array
     {
         $hashFieldsJson = $this->getHashFieldsJson();
         $hashFieldsSqlLiteral = "'" . str_replace("'", "''", $hashFieldsJson) . "'";
 
-        $this->refreshTable('customer_address', 'tdah_customer_address_extension', null, $hashFieldsSqlLiteral);
-        $this->refreshTable('order_address', 'tdah_order_address_extension', 'version_id', $hashFieldsSqlLiteral);
+        return [
+            'customer_address' => $this->refreshTable('customer_address', 'tdah_customer_address_extension', null, $hashFieldsSqlLiteral),
+            'order_address'    => $this->refreshTable('order_address', 'tdah_order_address_extension', 'version_id', $hashFieldsSqlLiteral),
+        ];
     }
 
-    private function refreshTable(string $table, string $extensionTable, ?string $versionField, string $hashFieldsSqlLiteral): void
+    /**
+     * @return array{processed: int, inserted: int, updated: int}
+     */
+    private function refreshTable(string $table, string $extensionTable, ?string $versionField, string $hashFieldsSqlLiteral): array
     {
         $hashExpr = $this->getSqlExpression($table);
 
@@ -94,10 +102,24 @@ class HashLogicService
             ? "id, {$versionField}, {$hashExpr}, {$hashFieldsSqlLiteral}, NOW(3), NOW(3), NOW(3), NULL"
             : "id, {$hashExpr}, {$hashFieldsSqlLiteral}, NOW(3), NOW(3), NOW(3), NULL";
 
+        $existingCount = (int) $this->connection->fetchOne("SELECT COUNT(*) FROM `{$extensionTable}`");
+        $sourceCount = (int) $this->connection->fetchOne("SELECT COUNT(*) FROM `{$table}`");
+
         $this->connection->executeStatement(
             "REPLACE INTO `{$extensionTable}` {$insertColumns}
             SELECT {$selectColumns} FROM `{$table}`"
         );
+
+        $newCount = (int) $this->connection->fetchOne("SELECT COUNT(*) FROM `{$extensionTable}`");
+
+        $inserted = max(0, $newCount - $existingCount);
+        $updated = $sourceCount - $inserted;
+
+        return [
+            'processed' => $sourceCount,
+            'inserted'  => $inserted,
+            'updated'   => $updated,
+        ];
     }
 
     public function calculateHash(array $data): string
