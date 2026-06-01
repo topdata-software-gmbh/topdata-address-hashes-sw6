@@ -23,6 +23,7 @@ class ConfigChangeSubscriber implements EventSubscriberInterface
             return;
         }
 
-        $this->triggerManager->updateAllTriggers();
+        $hashFieldsChangedAt = (new \DateTime())->format('Y-m-d H:i:s.v');
+        $this->triggerManager->updateAllTriggers($hashFieldsChangedAt);
     }
 }

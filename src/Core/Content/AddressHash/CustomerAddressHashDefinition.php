@@ -5,10 +5,12 @@ namespace Topdata\TopdataAddressHashesSW6\Core\Content\AddressHash;
 use Shopware\Core\Checkout\Customer\Aggregate\CustomerAddress\CustomerAddressDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\EntityDefinition;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\CreatedAtField;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\DateTimeField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\FkField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\ApiAware;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\PrimaryKey;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\Flag\Required;
+use Shopware\Core\Framework\DataAbstractionLayer\Field\JsonField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\StringField;
 use Shopware\Core\Framework\DataAbstractionLayer\Field\UpdatedAtField;
 use Shopware\Core\Framework\DataAbstractionLayer\FieldCollection;
@@ -27,6 +29,9 @@ class CustomerAddressHashDefinition extends EntityDefinition
         return new FieldCollection([
             (new FkField('address_id', 'addressId', CustomerAddressDefinition::class))->addFlags(new ApiAware(), new PrimaryKey(), new Required()),
             (new StringField('fingerprint', 'fingerprint'))->addFlags(new ApiAware(), new Required()),
+            new JsonField('hash_fields', 'hashFields'),
+            new DateTimeField('hash_fields_changed_at', 'hashFieldsChangedAt'),
+            new DateTimeField('hash_changed_at', 'hashChangedAt'),
             new CreatedAtField(),
             new UpdatedAtField(),
         ]);

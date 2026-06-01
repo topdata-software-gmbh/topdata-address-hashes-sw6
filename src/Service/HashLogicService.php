@@ -58,6 +58,14 @@ class HashLogicService
         }
     }
 
+    public function getHashFieldsJson(): string
+    {
+        $fields = $this->getEnabledFields();
+        sort($fields);
+
+        return json_encode($fields, JSON_THROW_ON_ERROR);
+    }
+
     /**
      * Generates SQL expression for calculating address hash in database.
      * Uses SHA-256 algorithm with concatenated normalized field values.

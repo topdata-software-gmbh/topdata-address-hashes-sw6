@@ -48,6 +48,33 @@ Binary IDs (`salutationId`, `countryId`) are normalized as hex-compatible string
 
 Field selection is configurable in Administration under plugin config `hashFields`.
 
+### Extension Table Schema
+
+Both `tdah_customer_address_extension` and `tdah_order_address_extension` contain:
+
+| Column | Type | Description |
+|---|---|---|
+| `address_id` | BINARY(16) | FK to the address table (PK) |
+| `fingerprint` | VARCHAR(64) | SHA-256 hash of the configured address fields |
+| `hash_fields` | JSON | Sorted JSON array of field names used to compute the fingerprint |
+| `hash_fields_changed_at` | DATETIME(3) | When the field configuration used for this fingerprint was saved |
+| `hash_changed_at` | DATETIME(3) | When the fingerprint was last computed |
+| `created_at` | DATETIME(3) | Row creation timestamp |
+| `updated_at` | DATETIME(3) | Row update timestamp |
+
+### Detecting stale hashes
+
+Compare `hash_fields` with the current config to detect hashes computed with a different field set:
+
+```sql
+-- Find customer addresses with stale hashes (fields don't match current config)
+SELECT ca.id, h.hash_fields
+FROM customer_address ca
+JOIN tdah_customer_address_extension h ON ca.id = h.address_id
+WHERE h.hash_fields IS NULL
+   OR h.hash_fields != '["city","countryId","lastName","street","zipcode"]';
+```
+
 ## Console command
 
 Use this command to backfill hashes for existing data:

@@ -24,13 +24,13 @@ class AddressHashApiController extends AbstractTopdataApiController
     public function getConfig(): JsonResponse
     {
         return $this->payloadResponse([
-            'algorithm'     => 'SHA256',
-            'normalization' => 'lowercase, non-alphanumeric removed',
-            'fields'        => $this->hashLogicService->getEnabledFields(),
-            'sqlTemplate'   => $this->hashLogicService->getSqlExpression('TABLE_ALIAS'),
+            'algorithm'      => 'SHA256',
+            'normalization'  => 'lowercase, non-alphanumeric removed',
+            'fields'         => $this->hashLogicService->getEnabledFields(),
+            'fieldsJson'     => $this->hashLogicService->getHashFieldsJson(),
+            'sqlTemplate'    => $this->hashLogicService->getSqlExpression('TABLE_ALIAS'),
         ]);
     }
-
 
     #[Route(
         path: '/api/_action/topdata/calculate-address-hash',
@@ -63,6 +63,7 @@ class AddressHashApiController extends AbstractTopdataApiController
             'fieldsMissing' => $result['missing'],
             'config'        => [
                 'enabledFields' => $this->hashLogicService->getEnabledFields(),
+                'fieldsJson'    => $this->hashLogicService->getHashFieldsJson(),
             ],
         ]);
     }
