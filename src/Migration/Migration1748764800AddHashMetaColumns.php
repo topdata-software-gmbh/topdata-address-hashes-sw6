@@ -19,7 +19,7 @@ class Migration1748764800AddHashMetaColumns extends MigrationStep
         $this->_addMetaColumns($connection, 'tdah_customer_address_extension');
         $this->_addMetaColumns($connection, 'tdah_order_address_extension');
 
-        $triggerManager = new TriggerManager($connection, new HashLogicService());
+        $triggerManager = new TriggerManager($connection, new HashLogicService($connection));
         $triggerManager->updateAllTriggers();
     }
 
