@@ -112,7 +112,7 @@ class Migration1716380000CreateAddressHashTable extends MigrationStep
 
     private function _createTriggers(Connection $connection): void
     {
-        $triggerManager = new TriggerManager($connection, new HashLogicService());
+        $triggerManager = new TriggerManager($connection, new HashLogicService($connection));
         $triggerManager->updateAllTriggers();
     }
 
